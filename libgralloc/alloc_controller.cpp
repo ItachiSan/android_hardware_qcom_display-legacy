@@ -34,9 +34,10 @@
 #include "alloc_controller.h"
 #include "memalloc.h"
 #include "ionalloc.h"
-#include "pmemalloc.h"
 #ifdef USE_PMEM_ADSP
 #include "pmemadspalloc.h"
+#else
+#include "pmemalloc.h"
 #endif
 #include "ashmemalloc.h"
 #include "gr.h"

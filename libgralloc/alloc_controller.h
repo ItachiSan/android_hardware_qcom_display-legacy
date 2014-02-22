@@ -73,8 +73,9 @@ class IonController : public IAllocController {
     private:
     android::sp<IonAlloc> mIonAlloc;
     #ifdef USE_PMEM_ADSP
-    PmemAdspAlloc* mPmemAlloc;
+    android::sp<PmemAdspAlloc> mPmemAlloc;
     #endif
+        
 };
 
 class PmemKernelController : public IAllocController {
