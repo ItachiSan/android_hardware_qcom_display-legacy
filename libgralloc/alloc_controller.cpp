@@ -35,6 +35,9 @@
 #include "memalloc.h"
 #include "ionalloc.h"
 #include "pmemalloc.h"
+#ifdef USE_PMEM_ADSP
+#include "pmemadspalloc.h"
+#endif
 #include "ashmemalloc.h"
 #include "gr.h"
 #include "comptype.h"
@@ -116,6 +119,9 @@ sp<IAllocController> IAllocController::getInstance(bool useMasterHeap)
 IonController::IonController()
 {
     mIonAlloc = new IonAlloc();
+    #ifdef USE_PMEM_ADSP
+    mPmemAlloc = new PmemAdspAlloc();
+    #endif
 }
 
 int IonController::allocate(alloc_data& data, int usage,
@@ -127,6 +133,16 @@ int IonController::allocate(alloc_data& data, int usage,
 
     data.uncached = useUncached(usage);
     data.allocType = 0;
+
+#ifdef USE_PMEM_ADSP
+    if (usage & GRALLOC_USAGE_PRIVATE_ADSP_HEAP) {
+        data.allocType |= private_handle_t::PRIV_FLAGS_USES_PMEM_ADSP;
+        ret = mPmemAlloc->alloc_buffer(data);
+        if(ret < 0)
+            ALOGE("%s: Failed to allocate ADSP/SMI memory", __func__);
+        return ret;
+     }
+#endif
 
     if(usage & GRALLOC_USAGE_PRIVATE_UI_CONTIG_HEAP)
         ionFlags |= ION_HEAP(ION_SF_HEAP_ID);
@@ -192,6 +208,10 @@ sp<IMemAlloc> IonController::getAllocator(int flags)
     sp<IMemAlloc> memalloc;
     if (flags & private_handle_t::PRIV_FLAGS_USES_ION) {
         memalloc = mIonAlloc;
+    #ifdef USE_PMEM_ADSP
+    } else if (flags & private_handle_t::PRIV_FLAGS_USES_PMEM_ADSP) {
+        memalloc = mPmemAlloc;
+    #endif
     } else {
         ALOGE("%s: Invalid flags passed: 0x%x", __FUNCTION__, flags);
     }
